@@ -92,7 +92,7 @@ El sistema consta de cuatro componentes principales que deben ejecutarse simult�
 4.  **Importante**:
     *   Borra el archivo `quirk.html`.
     *   Renombra el archivo `quirk_util.html` -> `quirk.html`.
-    *   Actualiza la pagina.
+    *   Actualiza la página.
 5.  Este entorno permite la visualización en tiempo real de los circuitos.
 
 ---
@@ -101,3 +101,26 @@ El sistema consta de cuatro componentes principales que deben ejecutarse simult�
 
 > 📝
 > Una vez que los cuatro servidores (Django, Spring, QCraft, Quirk) estén levantados, el sistema estará listo para usarse de forma colaborativa y en tiempo real.
+
+---
+
+## 3. Modo de Uso: Debug
+
+En la sección **Mis Circuitos**, se muestra un botón adicional junto al botón de reproducción, identificado con un ícono de insecto 🐞. Al pulsarlo, se abrirá el circuito en **Modo DEBUG**.
+
+Este modo habilita herramientas adicionales para el análisis paso a paso del circuito:
+
+*   **Navegación paso a paso**: En la parte superior se añaden los botones **Previous Step** y **Next Step**, que permiten desplazarse entre los distintos estados de ejecución.
+*   **Seguimiento visual**: Se activa un seguimiento visual de pasos en color gris, mostrando:
+    *   Los resultados de cada columna del circuito, además del resultado final del circuito completo.
+*   **Actualización dinámica**: El estado del seguimiento se actualiza dinámicamente al avanzar o retroceder entre pasos mediante los botones correspondientes.
+
+### Ejemplos de uso
+
+*   **CASO 1**: Los resultados ya están en la Base de Datos guardados, por lo que no es necesario ejecutar el circuito para ver los resultados.
+
+![VIDEO MUESTRA 1](./gifs/IDyaGuardado.gif)
+
+*   **CASO 2**: El circuito ha sido modificado, por lo que es necesario ejecutar el circuito para ver los resultados nuevos.
+
+![VIDEO MUESTRA 2](./gifs/NuevoCircuito.gif)
