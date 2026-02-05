@@ -85,12 +85,14 @@ El sistema consta de cuatro componentes principales que deben ejecutarse simult�
     ```bash
     npm install
     ```
-3.  **Importante**: Renombra el archivo:
-    *   `quirk_util.html` -> `quirk.html`
-4.  Inicia el servidor de desarrollo:
+3.  Inicia el servidor de desarrollo:
     ```bash
     npm run dev
     ```
+4.  **Importante**:
+    *   Borra el archivo `quirk.html`.
+    *   Renombra el archivo `quirk_util.html` -> `quirk.html`.
+    *   Actualiza la pagina.
 5.  Este entorno permite la visualización en tiempo real de los circuitos.
 
 ---
@@ -99,5 +101,3 @@ El sistema consta de cuatro componentes principales que deben ejecutarse simult�
 
 > 📝
 > Una vez que los cuatro servidores (Django, Spring, QCraft, Quirk) estén levantados, el sistema estará listo para usarse de forma colaborativa y en tiempo real.
-
-
