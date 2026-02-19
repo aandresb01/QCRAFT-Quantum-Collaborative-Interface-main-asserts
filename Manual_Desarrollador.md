@@ -124,3 +124,17 @@ Este modo habilita herramientas adicionales para el análisis paso a paso del ci
 *   **CASO 2**: El circuito ha sido modificado, por lo que es necesario ejecutar el circuito para ver los resultados nuevos.
 
 ![VIDEO MUESTRA 2](./gifs/NuevoCircuito.gif)
+
+### Uso de Breakpoints
+
+El modo Debug incluye una funcionalidad de **Breakpoints** que permite detener la ejecución del circuito en una columna específica.
+
+*   **Indicador Visual**: En el modo Debug, verás círculos grises en la parte inferior de cada columna del circuito.
+*   **Activación**: Al hacer clic en uno de estos círculos, se tornará de color **rojo**, indicando que se ha establecido un breakpoint en esa columna.
+*   **Comportamiento**:
+    *   Cuando se ejecuta el circuito con un breakpoint activo, la ejecución se detendrá en la columna seleccionada.
+    *   Los resultados enviados al backend y mostrados en la interfaz se truncarán hasta el punto del breakpoint (inclusive).
+    *   Esto es útil para aislar y analizar partes específicas de un circuito complejo sin ejecutarlo en su totalidad.
+
+[Ver Video: Modo Debug Breakpoints](./gifs/ModoDebug_BreakPoints.mp4)
+

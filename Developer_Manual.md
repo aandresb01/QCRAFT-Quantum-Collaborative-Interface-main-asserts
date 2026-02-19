@@ -139,3 +139,17 @@ This mode enables additional tools for step-by-step circuit analysis:
 * **CASE 2**: The circuit has been modified, so it must be executed to see the new results.
 
 ![VIDEO SAMPLE 2](./gifs/NuevoCircuito.gif)
+
+### Using Breakpoints
+
+Debug mode includes a **Breakpoints** functionality that allows stopping circuit execution at a specific column.
+
+*   **Visual Indicator**: In Debug mode, you will see gray circles at the bottom of each circuit column.
+*   **Activation**: Clicking on one of these circles will turn it **red**, indicating that a breakpoint has been set at that column.
+*   **Behavior**:
+    *   When the circuit is executed with an active breakpoint, execution will stop at the selected column.
+    *   Results sent to the backend and displayed in the interface will be truncated up to the breakpoint point (inclusive).
+    *   This is useful for isolating and analyzing specific parts of a complex circuit without running it entirely.
+
+[Watch Video: Debug Mode Breakpoints](./gifs/ModoDebug_BreakPoints.mp4)
+
