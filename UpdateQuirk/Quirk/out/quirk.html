@@ -321,18 +321,18 @@
         style="display: flex; gap: 8px; padding: 10px; border-radius: 5px; background-color: #ffffff; font-size: 16px; margin: auto; margin-bottom: 15px; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);">
 
         <div style="display: flex; flex-direction: column; align-items: flex-start; gap: 5px;">
-            <span style="color: black; font-weight: bold; white-space: nowrap; font-size: 18px;">Resultado
-                Esperado:</span>
+            <span style="color: black; font-weight: bold; white-space: nowrap; font-size: 18px;">Expected
+                Results:</span>
         </div>
 
         <input type="text" id="inputResultadoEsperado"
-            placeholder="Escribe el resultado esperado (Formato: {0000: 2}, {0001: 5}, ...)"
+            placeholder="Write the expected results (Format: {0000: 2}, {0001: 5}, ...)"
             style="min-width: 300px; width: auto; background-color: #bfbfbf; border-radius: 12px; border: none; padding: 16px; color: black; gap: 6px; flex-wrap: nowrap; white-space: nowrap; overflow-x: auto; outline: none; box-shadow: none; font-family: Arial, sans-serif; font-size: 16px; font-weight: bold; transition: all 0.3s ease; box-sizing: border-box; align-self: center;">
     </div>
 
     <div id="resultadoCircuito"
         style="display: flex; gap: 8px; padding: 10px; border-radius: 5px; background-color: #ffffff; font-size: 16px; margin: auto; margin-bottom: 15px; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);">
-        <span style="color: black; font-weight: bold; white-space: nowrap; font-size: 18px;">Resultado:</span>
+        <span style="color: black; font-weight: bold; white-space: nowrap; font-size: 18px;">Results:</span>
         <span id="contenedor"
             style="background-color: #bfbfbf; border-radius: 12px; padding: 2px 4px; color: black; gap: 6px; flex-wrap: nowrap; white-space: nowrap; overflow-x: auto; font-weight: bold; display: inline-flex;"></span>
     </div>
@@ -352,7 +352,7 @@
     ">
 
         <span style="color: black; font-weight: bold; font-size: 18px;">
-            Gráfica:
+            Graph:
         </span>
 
         <!-- Zona de barras -->
@@ -771,7 +771,6 @@
 
         // Función para obtener la URL antes de la cadena y la cadena del circuito
         function obtenerURLYCadena() {
-            // Obtener la URL completa
             const urlCompleta = window.location.href;
 
             if (urlCompleta.endsWith("quirk.html") || urlCompleta.endsWith(":[]}")) {
@@ -779,38 +778,31 @@
                 return null;
             }
 
-
-            // Establecer la URL antes de la cadena como la URL completa predeterminada
             urlAntesDeCadena = urlCompleta;
 
             // Obtener la cadena del circuito
             const hashIndex = urlCompleta.indexOf("&cadena=");
             if (hashIndex !== -1) {
-                const hash = urlCompleta.slice(0, hashIndex); // Extraer la parte de la URL antes de "&cadena="
+                const hash = urlCompleta.slice(0, hashIndex);
                 const urlParams = new URLSearchParams(hash);
                 cadenaCircuito = urlParams.get("cadena");
                 console.log("HASHHHH", hash);
             }
 
-            // Almacenar la URL antes de la cadena
             return urlAntesDeCadena = hashIndex !== -1 ? urlCompleta.slice(0, hashIndex) : urlCompleta;
 
         }
 
-        // Seleccionar el botón por su id
         const enviarUrlButton = document.getElementById("enviar-url");
 
-        // Agregar un event listener para el evento click
         enviarUrlButton.addEventListener("click", function () {
-            // Verificar si el texto del botón es "Go to Quirk Advance"
             if (document.getElementById('enviar-url-button').textContent === "Guardar como nuevo") {
 
-                // Si lo es, enviar el mensaje postMessage
                 if (obtenerURLYCadena() === null) {
                     return;
                 }
                 else {
-                    obtenerURLYCadena(); // Obtener la URL antes de la cadena y la cadena del circuito
+                    obtenerURLYCadena();
                     window.parent.postMessage({ type: 'get url' }, '*');
                 }
             } else if (document.getElementById('enviar-url-button').textContent === "Guardar cambios") {
@@ -1183,7 +1175,6 @@
                 if (window.debugBreakpoint !== null && window.debugBreakpoint !== undefined) {
                     if (posicionActual >= window.debugBreakpoint) {
                         console.log("Cannot step past breakpoint.");
-                        // Optional: Visual feedback
                         return;
                     }
                 }
@@ -1319,7 +1310,7 @@
 
             window.ejecutarTodo = async function () {
                 feedback.style.display = "block";
-                feedback.textContent = "🚀 Iniciando depuración...";
+                feedback.textContent = "📝 Iniciando depuración...";
 
                 let datosxcolumnaacumulado = [];
                 ConjuntoResultados = [];
@@ -1793,11 +1784,10 @@
             }
 
             let resultsToSend = ConjuntoResultados;
-            let urlToSend = window.location.href; // Default to full URL
+            let urlToSend = window.location.href;
 
             if (window.debugBreakpoint !== null && window.debugBreakpoint !== undefined && typeof window.debugBreakpoint === 'number') {
                 // Si hay un breakpoint, enviamos solo hasta esa columna (inclusive)
-                // Asumiendo que cada índice de ConjuntoResultados corresponde a una columna
                 if (Array.isArray(ConjuntoResultados)) {
                     resultsToSend = ConjuntoResultados.slice(0, window.debugBreakpoint + 1);
                     console.log(`Enviando resultados truncados hasta el breakpoint (Columna ${window.debugBreakpoint})`);
@@ -1813,8 +1803,6 @@
                         if (circuitData.cols) {
                             circuitData.cols = circuitData.cols.slice(0, window.debugBreakpoint + 1);
                             const newJsonStr = JSON.stringify(circuitData);
-                            // Re-construct the URL with the truncated circuit
-                            // We keep the base URL and replace the hash part
                             const baseUrl = window.location.href.split('#')[0];
                             urlToSend = `${baseUrl}#circuit=${encodeURIComponent(newJsonStr)}`;
                             console.log("Truncated URL generated for DB.");
@@ -1829,7 +1817,7 @@
 
             const payload = {
                 id_circuito_debug: window.currentCircuitId,
-                url_circuito_debug: urlToSend, // Use the potentially modified URL
+                url_circuito_debug: urlToSend,
                 resultado_circuito_debug: resultsToSend
             };
 
@@ -1883,12 +1871,7 @@
 
                 console.log("Breakpoints: Applying safe patch...");
 
-                // Global single breakpoint
                 window.debugBreakpoint = null;
-
-                // -------------------------
-                // PATCH paint (SAFE)
-                // -------------------------
 
                 const originalPaint = DisplayedCircuit.prototype.paint;
 
@@ -1929,9 +1912,6 @@
                     }
                 };
 
-                // -------------------------
-                // PATCH tryClick (CORREGIDO Y ESTABLE)
-                // -------------------------
                 const originalTryClick = DisplayedCircuit.prototype.tryClick;
 
                 DisplayedCircuit.prototype.tryClick = function (hand) {
@@ -1963,14 +1943,12 @@
                                     hayBreakpoints = true;
                                 }
 
-                                // 🔥 Forzar "movimiento" del mouse +1px
                                 const canvas = document.querySelector("canvas");
                                 if (canvas) {
 
                                     const rect = canvas.getBoundingClientRect();
 
-                                    // Coordenadas actuales relativas al viewport
-                                    const clientX = rect.left + hand.pos.x + 1;  // +1px
+                                    const clientX = rect.left + hand.pos.x + 1;
                                     const clientY = rect.top + hand.pos.y;
 
                                     const moveEvent = new MouseEvent("mousemove", {
@@ -1990,7 +1968,6 @@
                         }
                     }
 
-                    // comportamiento normal si no fue nuestro botón
                     return originalTryClick.call(this, hand);
                 };
 
@@ -2001,7 +1978,6 @@
             }
         })();
 
-        // --- START DEBUG BUTTON LOGIC ---
         (function () {
             setTimeout(() => {
                 const debugBtn = document.getElementById("start-button-debug");
@@ -2011,13 +1987,10 @@
                         await ejecutarTodo();
 
                         const hash = window.location.hash;
-
-                        // Default empty circuit structure
                         let circuitData = { cols: [] };
 
                         if (hash && hash.includes('circuit=')) {
                             try {
-                                // Extract JSON from hash
                                 const jsonStr = decodeURIComponent(hash.substring(hash.indexOf('circuit=') + 8));
                                 circuitData = JSON.parse(jsonStr);
                             } catch (e) {
@@ -2025,14 +1998,12 @@
                             }
                         }
 
-                        // Clone circuit data to avoid modifying the original if we were holding a reference (though JSON.parse creates a new object)
                         let finalCircuit = JSON.parse(JSON.stringify(circuitData));
                         const breakpoint = window.debugBreakpoint;
 
                         console.log("Current Breakpoint:", breakpoint);
 
                         if (breakpoint !== null && breakpoint !== undefined && typeof breakpoint === 'number') {
-                            // Truncate
                             if (finalCircuit.cols) {
                                 finalCircuit.cols = finalCircuit.cols.slice(0, breakpoint + 1);
                                 console.log("Circuit truncated up to column:", breakpoint);
@@ -2041,14 +2012,12 @@
                             console.log("No breakpoint selected. Using full circuit.");
                         }
 
-                        // Request Object
                         const requestPayload = {
                             circuit: finalCircuit,
                             breakpoint: breakpoint
                         };
 
                         console.log("🚀 SENDING DEBUG REQUEST:", requestPayload);
-                        // alert("Debug request sent! Check console for details.");
                     });
                 } else {
                     console.warn("Debug button not found.");
@@ -2058,12 +2027,11 @@
 
         async function checkBreakpoint(colIndex) {
             if (window.debugBreakpoint === colIndex) {
-                return true; // Signal to STOP
+                return true;
             }
             return false;
         }
 
-        // Lógica para el Resultado Esperado
         const inputResultadoEsperado = document.getElementById('inputResultadoEsperado');
 
         // Función para comparar resultados con parseo flexible
@@ -2071,7 +2039,7 @@
             if (!inputResultadoEsperado) return;
             const inputVal = inputResultadoEsperado.value.trim();
 
-            // Si está vacío, resetear estilo base (gris)
+            // Si está vacío, resetear estilo base
             if (!inputVal) {
                 inputResultadoEsperado.style.border = "none";
                 inputResultadoEsperado.style.backgroundColor = "#bfbfbf";
@@ -2084,23 +2052,18 @@
             }
             const currentResult = dataGlobal[`slice_${posicionActual}`];
 
-            // Intentar parsear el input de forma flexible
             let cleanInput = inputVal.replace(/'/g, '"');
-            // Añadir comillas a claves sin comillas: {key: val} -> {"key": val}
             cleanInput = cleanInput.replace(/([{,]\s*)([a-zA-Z0-9_]+)(\s*:)/g, '$1"$2"$3');
 
             let userObj = {};
             let parsed = null;
 
-            // Estrategia 1: Parsear tal cual (por si es {"a": 1})
             try {
                 parsed = JSON.parse(cleanInput);
             } catch (e1) {
-                // Estrategia 2: Puede ser una lista de objetos sin corchetes: {"a":1}, {"b":2}
                 try {
                     parsed = JSON.parse('[' + cleanInput + ']');
                 } catch (e2) {
-                    // Estrategia 3: Puede ser propiedades sueltas "a":1, "b":2 pero sin {}
                     try {
                         parsed = JSON.parse('{' + cleanInput + '}');
                     } catch (e3) {
@@ -2120,16 +2083,15 @@
                 return;
             }
 
-            // Comparar objetos normalizados
             const sortObj = o => Object.keys(o).sort().reduce((r, k) => (r[k] = o[k], r), {});
             const s1 = JSON.stringify(sortObj(userObj));
             const s2 = JSON.stringify(sortObj(currentResult));
 
             if (s1 === s2) {
-                inputResultadoEsperado.style.border = "4px solid #28a745"; // Verde
+                inputResultadoEsperado.style.border = "4px solid #28a745";
                 inputResultadoEsperado.style.backgroundColor = "#d4edda";
             } else {
-                inputResultadoEsperado.style.border = "4px solid #dc3545"; // Rojo
+                inputResultadoEsperado.style.border = "4px solid #dc3545";
                 inputResultadoEsperado.style.backgroundColor = "#f8d7da";
             }
         }
@@ -2187,16 +2149,15 @@
             });
         }
 
-        // Hook para llamar a comparar cuando cambia la gráfica (navegación pasos debug)
+        // Hook para llamar a comparar cuando cambia la gráfica
         const originalPintarGrafica = window.pintarGrafica;
         if (originalPintarGrafica) {
             window.pintarGrafica = function (sliceName, data) {
                 originalPintarGrafica(sliceName, data);
-                setTimeout(compareResults, 100); // Pequeño delay para asegurar que dataGlobal está listo
+                setTimeout(compareResults, 100);
             };
         }
 
-        // --- Lógica para ajustar el ancho del input dinámicamente ---
         function getTextWidth(text, font) {
             const canvas = getTextWidth.canvas || (getTextWidth.canvas = document.createElement("canvas"));
             const context = canvas.getContext("2d");
@@ -2208,18 +2169,13 @@
         function updateInputWidth() {
             if (!inputResultadoEsperado) return;
             const text = inputResultadoEsperado.value || inputResultadoEsperado.placeholder;
-            // Usamos la misma fuente que definimos en CSS
             const font = "bold 16px Arial, sans-serif";
             const width = getTextWidth(text, font);
-            // +40 px de padding extra para que no quede pegado
             inputResultadoEsperado.style.width = (width + 40) + "px";
         }
 
         if (inputResultadoEsperado) {
-            // Inicializar ancho
             updateInputWidth();
-
-            // Actualizar en input
             inputResultadoEsperado.addEventListener('input', updateInputWidth);
         }
 
