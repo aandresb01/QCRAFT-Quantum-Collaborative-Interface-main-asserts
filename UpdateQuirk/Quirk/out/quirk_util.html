@@ -1325,9 +1325,11 @@
                     if (exists) return;
                 }
 
+                const isBreakpointSet = window.debugBreakpoint !== null && window.debugBreakpoint !== undefined && typeof window.debugBreakpoint === 'number';
+
+                window.resultadosDespuesDelBreakpoint = [];
+
                 for (let i = 0; i < columnasURL.length; i++) {
-
-
 
                     const columnaArray = columnasURL[i]
                         .split(",")
@@ -1338,36 +1340,39 @@
                         });
 
                     datosxcolumnaacumulado.push(columnaArray);
-
                     columnasCircuito = datosxcolumnaacumulado.map(c => [...c]);
 
-                    const columnasEjecutables = asegurarMeasure(datosxcolumnaacumulado);
+                    // Skip intermediate columns before the breakpoint, but process the breakpoint itself and everything after it.
+                    if (!isBreakpointSet || i >= window.debugBreakpoint) {
+                        const columnasEjecutables = asegurarMeasure(datosxcolumnaacumulado);
 
-                    const IdCircuito = await sacarID(columnasEjecutables);
-                    if (IdCircuito) {
+                        const IdCircuito = await sacarID(columnasEjecutables);
+                        if (IdCircuito) {
 
-                        const resultado = await sacarResultado(IdCircuito, 1, i);
+                            const resultado = await sacarResultado(IdCircuito, 1, i);
 
-                        const resultadoStr = typeof resultado === "string" ? resultado : JSON.stringify(resultado);
+                            const resultadoStr = typeof resultado === "string" ? resultado : JSON.stringify(resultado);
 
-                        const parteValue = resultadoStr.split('"value":')[1];
+                            const parteValue = resultadoStr.split('"value":')[1];
 
-                        if (parteValue) {
+                            if (parteValue) {
 
-                            const soloValue = parteValue.substring(
-                                0,
-                                parteValue.lastIndexOf("}")
-                            );
+                                const soloValue = parteValue.substring(
+                                    0,
+                                    parteValue.lastIndexOf("}")
+                                );
 
-                            ConjuntoResultados.push(soloValue);
+                                ConjuntoResultados[i] = soloValue;
 
+                                if (isBreakpointSet && i > window.debugBreakpoint) {
+                                    window.resultadosDespuesDelBreakpoint.push(JSON.parse(soloValue.trim()));
+                                }
+
+                            }
                         }
-                    }
-
-                    const shouldStop = await checkBreakpoint(i);
-                    if (shouldStop) {
-                        stopAtBreakpoint = true;
-                        break;
+                    } else {
+                        // Dummy value to keep ConjuntoResultados indexes aligned for columns skipped before breakpoint
+                        ConjuntoResultados[i] = '{"0": 0}';
                     }
                 }
 
@@ -1546,13 +1551,15 @@
                 const data = {};
 
                 ConjuntoResultados.forEach((resultadoStr, idx) => {
-                    const resultadoObj = JSON.parse(resultadoStr.trim());
-                    data[`slice_${idx}`] = resultadoObj;
+                    if (resultadoStr && resultadoStr.trim() !== "") {
+                        const resultadoObj = JSON.parse(resultadoStr.trim());
+                        data[`slice_${idx}`] = resultadoObj;
+                    }
                 });
 
                 dataGlobal = data;
 
-                posicionActual = 0;
+                posicionActual = (window.debugBreakpoint !== null && window.debugBreakpoint !== undefined && typeof window.debugBreakpoint === 'number') ? window.debugBreakpoint : 0;
 
                 mostrarColumnas();
                 pintarGrafica(`slice_${posicionActual}`, dataGlobal);
@@ -1755,10 +1762,6 @@
                             return true;
                         } else {
                             console.log("El ID existe pero la URL es diferente. Se permite la ejecución.");
-                            ConjuntoResultados = checkData.stored_result;
-                            await sendDebugData();
-                            ConjuntoResultados = [];
-                            debugAlreadySent = false;
                             return false;
                         }
                     }
@@ -1788,11 +1791,27 @@
             let resultsToSend = ConjuntoResultados;
             let urlToSend = window.location.href;
 
+            let fullUrl = window.location.href;
+            try {
+                const hash = window.location.hash;
+                if (hash && hash.includes('circuit=')) {
+                    const jsonStr = decodeURIComponent(hash.substring(hash.indexOf('circuit=') + 8));
+                    const circuitData = JSON.parse(jsonStr);
+                    const newJsonStr = JSON.stringify(circuitData);
+                    const baseUrl = window.location.href.split('#')[0];
+                    fullUrl = `${baseUrl}#circuit=${encodeURIComponent(newJsonStr)}`;
+                }
+            } catch (e) {
+                console.error("Error generating full URL:", e);
+            }
+
+            console.log("URL de todo el circuito:", fullUrl);
+            console.log("Resultado total del circuito:", JSON.parse(JSON.stringify(ConjuntoResultados)));
+
             if (window.debugBreakpoint !== null && window.debugBreakpoint !== undefined && typeof window.debugBreakpoint === 'number') {
                 // Si hay un breakpoint, enviamos solo hasta esa columna (inclusive)
                 if (Array.isArray(ConjuntoResultados)) {
                     resultsToSend = ConjuntoResultados.slice(0, window.debugBreakpoint + 1);
-                    console.log(`Enviando resultados truncados hasta el breakpoint (Columna ${window.debugBreakpoint})`);
                 }
 
                 // --- TRUNCATE CIRCUIT STRUCTURE (URL) ---
@@ -1807,14 +1826,16 @@
                             const newJsonStr = JSON.stringify(circuitData);
                             const baseUrl = window.location.href.split('#')[0];
                             urlToSend = `${baseUrl}#circuit=${encodeURIComponent(newJsonStr)}`;
-                            console.log("Truncated URL generated for DB.");
                         }
                     }
                 } catch (e) {
                     console.error("Error generating truncated URL:", e);
                 }
-            } else {
-                console.log("Enviando resultados completos (sin breakpoint)");
+
+                console.log("URL hasta el breakpoint:", urlToSend);
+                console.log("Resultado hasta el breakpoint:", resultsToSend);
+                debugAlreadySent = true;
+                return; // SKIP SENDING TO DB IF BREAKPOINT IS SET
             }
 
             const payload = {
@@ -1831,7 +1852,6 @@
                 });
 
                 debugAlreadySent = true;
-                console.log("Resultado final enviado");
 
             } catch (err) {
                 console.error("Error enviando resultados:", err);
@@ -1985,41 +2005,8 @@
                 const debugBtn = document.getElementById("start-button-debug");
                 if (debugBtn) {
                     debugBtn.addEventListener("click", async () => {
-                        console.log("Start Debug clicked");
+                        console.log("Start Debug clicked (Calling ejecutarTodo)");
                         await ejecutarTodo();
-
-                        const hash = window.location.hash;
-                        let circuitData = { cols: [] };
-
-                        if (hash && hash.includes('circuit=')) {
-                            try {
-                                const jsonStr = decodeURIComponent(hash.substring(hash.indexOf('circuit=') + 8));
-                                circuitData = JSON.parse(jsonStr);
-                            } catch (e) {
-                                console.error("Error parsing circuit from URL:", e);
-                            }
-                        }
-
-                        let finalCircuit = JSON.parse(JSON.stringify(circuitData));
-                        const breakpoint = window.debugBreakpoint;
-
-                        console.log("Current Breakpoint:", breakpoint);
-
-                        if (breakpoint !== null && breakpoint !== undefined && typeof breakpoint === 'number') {
-                            if (finalCircuit.cols) {
-                                finalCircuit.cols = finalCircuit.cols.slice(0, breakpoint + 1);
-                                console.log("Circuit truncated up to column:", breakpoint);
-                            }
-                        } else {
-                            console.log("No breakpoint selected. Using full circuit.");
-                        }
-
-                        const requestPayload = {
-                            circuit: finalCircuit,
-                            breakpoint: breakpoint
-                        };
-
-                        console.log("🚀 SENDING DEBUG REQUEST:", requestPayload);
                     });
                 } else {
                     console.warn("Debug button not found.");
