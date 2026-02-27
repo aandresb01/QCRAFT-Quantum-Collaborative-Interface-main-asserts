@@ -1643,7 +1643,8 @@
 
             chart.appendChild(yAxis);
 
-            const sortedKeys = Object.keys(slice).sort();
+            const sortedKeys = Object.keys(slice)
+                .sort((a, b) => slice[b] - slice[a]);
             for (const key of sortedKeys) {
                 const value = slice[key];
                 const label = key.substring(0, 4);
@@ -1701,7 +1702,7 @@
             if (!slice) return;
 
             const sortedKeys = Object.keys(slice)
-                .sort((a, b) => parseInt(a, 2) - parseInt(b, 2));
+                .sort((a, b) => slice[b] - slice[a]);
 
             const div = document.createElement("div");
 
@@ -1819,7 +1820,20 @@
             }
 
             console.log("URL de todo el circuito:", fullUrl);
-            console.log("Resultado total del circuito:", JSON.parse(JSON.stringify(ConjuntoResultados)));
+            const sortedConjunto = ConjuntoResultados.map(rStr => {
+                try {
+                    const obj = JSON.parse(rStr);
+                    return Object.entries(obj)
+                        .sort((a, b) => b[1] - a[1])
+                        .reduce((acc, [k, v]) => {
+                            acc['\u200b' + k] = v;
+                            return acc;
+                        }, {});
+                } catch (e) {
+                    return rStr;
+                }
+            });
+            console.log("Resultado total del circuito (Filas ordenadas de mayor a menor):", sortedConjunto);
 
             if (window.debugBreakpoint !== null && window.debugBreakpoint !== undefined && typeof window.debugBreakpoint === 'number') {
                 // Si hay un breakpoint, enviamos solo hasta esa columna (inclusive)
@@ -1846,7 +1860,20 @@
                 }
 
                 console.log("URL hasta el breakpoint:", urlToSend);
-                console.log("Resultado hasta el breakpoint:", resultsToSend);
+                const sortedBreakpointResults = resultsToSend.map(rStr => {
+                    try {
+                        const obj = JSON.parse(rStr);
+                        return Object.entries(obj)
+                            .sort((a, b) => b[1] - a[1])
+                            .reduce((acc, [k, v]) => {
+                                acc['\u200b' + k] = v;
+                                return acc;
+                            }, {});
+                    } catch (e) {
+                        return rStr;
+                    }
+                });
+                console.log("Resultado hasta el breakpoint (Filas ordenadas de mayor a menor):", sortedBreakpointResults);
                 debugAlreadySent = true;
                 return; // SKIP SENDING TO DB IF BREAKPOINT IS SET
             }
@@ -2054,6 +2081,51 @@
             }
             const currentResult = dataGlobal[`slice_${posicionActual}`];
 
+            // 1. Obtener los resultados reales ordenados por valor descendente
+            const realSortedEntries = Object.entries(currentResult).sort((a, b) => b[1] - a[1]);
+            const realSortedKeys = realSortedEntries.map(e => e[0]);
+
+            // Determinar longitud esperada de los bits (la de las claves del simulador)
+            const expectedBitLength = realSortedKeys.length > 0 ? realSortedKeys[0].length : 0;
+
+            // 2. Parsear el input del usuario (separado por comas)
+            const userInputs = inputVal.split(',').map(s => s.trim()).filter(s => s.length > 0);
+
+            if (userInputs.length === 0) return;
+
+            // Verificar si el input parece un JSON (si empieza por { o [) para mantener compatibilidad si se desea
+            const isJsonLike = inputVal.startsWith('{') || inputVal.startsWith('[');
+
+            if (!isJsonLike) {
+                let matchesCount = 0;
+                let processedInputs = 0;
+
+                userInputs.forEach((uVal, index) => {
+                    // Rellenar con ceros a la izquierda si tiene menos dígitos
+                    const paddedUserVal = uVal.padStart(expectedBitLength, '0');
+
+                    if (index < realSortedKeys.length) {
+                        processedInputs++;
+                        if (paddedUserVal === realSortedKeys[index]) {
+                            matchesCount++;
+                        }
+                    }
+                });
+
+                // Lógica de colores:
+                if (matchesCount === userInputs.length && userInputs.length > 0) {
+                    // Todos coinciden
+                    inputResultadoEsperado.style.border = "4px solid #28a745";
+                    inputResultadoEsperado.style.backgroundColor = "#d4edda";
+                } else {
+                    // Si no coinciden todos, rojo
+                    inputResultadoEsperado.style.border = "4px solid #dc3545";
+                    inputResultadoEsperado.style.backgroundColor = "#f8d7da";
+                }
+                return;
+            }
+
+            // --- DE AQUÍ EN ADELANTE: LÓGICA JSON ORIGINAL (Fallback) ---
             let cleanInput = inputVal.replace(/'/g, '"');
             cleanInput = cleanInput.replace(/([{,]\s*)([a-zA-Z0-9_]+)(\s*:)/g, '$1"$2"$3');
 
