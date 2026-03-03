@@ -1835,48 +1835,7 @@
             });
             console.log("Resultado total del circuito (Filas ordenadas de mayor a menor):", sortedConjunto);
 
-            if (window.debugBreakpoint !== null && window.debugBreakpoint !== undefined && typeof window.debugBreakpoint === 'number') {
-                // Si hay un breakpoint, enviamos solo hasta esa columna (inclusive)
-                if (Array.isArray(ConjuntoResultados)) {
-                    resultsToSend = ConjuntoResultados.slice(0, window.debugBreakpoint + 1);
-                }
 
-                // --- TRUNCATE CIRCUIT STRUCTURE (URL) ---
-                try {
-                    const hash = window.location.hash;
-                    if (hash && hash.includes('circuit=')) {
-                        const jsonStr = decodeURIComponent(hash.substring(hash.indexOf('circuit=') + 8));
-                        const circuitData = JSON.parse(jsonStr);
-
-                        if (circuitData.cols) {
-                            circuitData.cols = circuitData.cols.slice(0, window.debugBreakpoint + 1);
-                            const newJsonStr = JSON.stringify(circuitData);
-                            const baseUrl = window.location.href.split('#')[0];
-                            urlToSend = `${baseUrl}#circuit=${encodeURIComponent(newJsonStr)}`;
-                        }
-                    }
-                } catch (e) {
-                    console.error("Error generating truncated URL:", e);
-                }
-
-                console.log("URL hasta el breakpoint:", urlToSend);
-                const sortedBreakpointResults = resultsToSend.map(rStr => {
-                    try {
-                        const obj = JSON.parse(rStr);
-                        return Object.entries(obj)
-                            .sort((a, b) => b[1] - a[1])
-                            .reduce((acc, [k, v]) => {
-                                acc['\u200b' + k] = v;
-                                return acc;
-                            }, {});
-                    } catch (e) {
-                        return rStr;
-                    }
-                });
-                console.log("Resultado hasta el breakpoint (Filas ordenadas de mayor a menor):", sortedBreakpointResults);
-                debugAlreadySent = true;
-                return; // SKIP SENDING TO DB IF BREAKPOINT IS SET
-            }
 
             const payload = {
                 id_circuito_debug: window.currentCircuitId,
