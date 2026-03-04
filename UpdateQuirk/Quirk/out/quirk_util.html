@@ -786,7 +786,6 @@
                 const hash = urlCompleta.slice(0, hashIndex);
                 const urlParams = new URLSearchParams(hash);
                 cadenaCircuito = urlParams.get("cadena");
-                console.log("HASHHHH", hash);
             }
 
             return urlAntesDeCadena = hashIndex !== -1 ? urlCompleta.slice(0, hashIndex) : urlCompleta;
@@ -807,32 +806,20 @@
                 }
             } else if (document.getElementById('enviar-url-button').textContent === "Guardar cambios") {
 
-                // Si el texto del botón es "Editar Circuito", enviar otro mensaje postMessage
                 cadenaCircuito = obtenerValorParametroCadena();
-                console.log("Cadena del circuito:", cadenaCircuito);
                 urlAntesDeCadena = obtenerURLAntesDeCadena();
-                console.log("URL antes de la cadena:", urlAntesDeCadena);
                 window.parent.postMessage({ type: 'edit circuit' }, '*');
-                console.log("La url es:", urlAntesDeCadena);
-                console.log("La cadena es:", cadenaCircuito);
-                console.log("Editar Circuito");
             }
         });
 
-        // Cambiar el texto del botón dependiendo de si la URL contiene "&cadena="
         if (urlContieneCadena()) {
             document.getElementById('enviar-url-button').textContent = 'Guardar cambios';
-            // Si la URL contiene "&cadena=", obtén y utiliza el valor de la cadena
             cadenaCircuito = obtenerValorParametroCadena();
-            console.log("Cadena del circuito:", cadenaCircuito);
             urlAntesDeCadena = obtenerURLAntesDeCadena();
-            console.log("URL antes de la cadena:", urlAntesDeCadena);
-            // Aquí puedes hacer lo que necesites con la cadena del circuito
         } else {
             document.getElementById('enviar-url-button').textContent = 'Guardar como nuevo';
         }
     </script>
-    <!-- Script para modales -->
     <script>
 
         // Share Circuit modal
@@ -968,11 +955,9 @@
                 e.preventDefault();
                 e.stopImmediatePropagation();
                 e.stopPropagation();
-                console.log("Click bloqueado");
             }, true);
             menuButton.addEventListener("contextmenu", function (e) {
                 e.preventDefault();
-                console.log("Click derecho bloqueado");
             });
 
             // Enviar URL
@@ -983,11 +968,9 @@
                 e.preventDefault();
                 e.stopImmediatePropagation();
                 e.stopPropagation();
-                console.log("Click bloqueado");
             }, true);
             enviarUrlBtn.addEventListener("contextmenu", function (e) {
                 e.preventDefault();
-                console.log("Click derecho bloqueado");
             });
 
             // Export Button
@@ -998,11 +981,9 @@
                 e.preventDefault();
                 e.stopImmediatePropagation();
                 e.stopPropagation();
-                console.log("Click bloqueado");
             }, true);
             exportButton.addEventListener("contextmenu", function (e) {
                 e.preventDefault();
-                console.log("Click derecho bloqueado");
             });
 
             // Clear Circuit
@@ -1013,11 +994,9 @@
                 e.preventDefault();
                 e.stopImmediatePropagation();
                 e.stopPropagation();
-                console.log("Click bloqueado");
             }, true);
             clearCircuitButton.addEventListener("contextmenu", function (e) {
                 e.preventDefault();
-                console.log("Click derecho bloqueado");
             });
 
             // Clear All
@@ -1028,11 +1007,9 @@
                 e.preventDefault();
                 e.stopImmediatePropagation();
                 e.stopPropagation();
-                console.log("Click bloqueado");
             }, true);
             clearAllButton.addEventListener("contextmenu", function (e) {
                 e.preventDefault();
-                console.log("Click derecho bloqueado");
             });
 
             // Undo
@@ -1043,11 +1020,9 @@
                 e.preventDefault();
                 e.stopImmediatePropagation();
                 e.stopPropagation();
-                console.log("Click bloqueado");
             }, true);
             undoButton.addEventListener("contextmenu", function (e) {
                 e.preventDefault();
-                console.log("Click derecho bloqueado");
             });
 
             // Redo
@@ -1058,11 +1033,9 @@
                 e.preventDefault();
                 e.stopImmediatePropagation();
                 e.stopPropagation();
-                console.log("Click bloqueado");
             }, true);
             redoButton.addEventListener("contextmenu", function (e) {
                 e.preventDefault();
-                console.log("Click derecho bloqueado");
             });
 
             // Gate Forge
@@ -1073,11 +1046,9 @@
                 e.preventDefault();
                 e.stopImmediatePropagation();
                 e.stopPropagation();
-                console.log("Click bloqueado");
             }, true);
             gateForgeButton.addEventListener("contextmenu", function (e) {
                 e.preventDefault();
-                console.log("Click derecho bloqueado");
             });
 
             // Share Circuit
@@ -1088,11 +1059,9 @@
                 e.preventDefault();
                 e.stopImmediatePropagation();
                 e.stopPropagation();
-                console.log("Click bloqueado");
             }, true);
             shareCircuitButton.addEventListener("contextmenu", function (e) {
                 e.preventDefault();
-                console.log("Click derecho bloqueado");
             });
 
             // Enter Circuit
@@ -1103,11 +1072,9 @@
                 e.preventDefault();
                 e.stopImmediatePropagation();
                 e.stopPropagation();
-                console.log("Click bloqueado");
             }, true);
             enterCircuitButton.addEventListener("contextmenu", function (e) {
                 e.preventDefault();
-                console.log("Click derecho bloqueado");
             });
 
             const enterCircuit = document.getElementById("enterCircuit");
@@ -1191,7 +1158,6 @@
 
             columnasURL = [];
 
-            // 1. Intentar parseo estándar de Quirk (#circuit=...)
             if (hash && hash.includes("circuit=")) {
                 try {
                     let circuitPart = hash.substring(hash.indexOf("circuit=") + 8);
@@ -1209,7 +1175,6 @@
                 }
             }
 
-            // 2. Si falla o no existe, intentar parseo custom (Legacy/Custom format :[...] )
             if (columnasURL.length === 0) {
                 const parts = url.split(":[");
                 if (parts.length > 1) {
@@ -1304,7 +1269,6 @@
                     const getResponse = await fetch(`http://54.155.193.167:8082/result?id=${IdCircuito}`);
                     if (!getResponse.ok) {
                         feedback.textContent = `⚠️ Error en GET (${getResponse.status})`;
-                        console.log(`Intento ${intento}: error en GET (${getResponse.status})`);
                     } else {
                         const resultData = await getResponse.json();
 
@@ -1362,7 +1326,6 @@
                 datosxcolumnaacumulado.push(columnaArray);
                 columnasCircuito = datosxcolumnaacumulado.map(c => [...c]);
 
-                // Skip intermediate columns before the breakpoint, but process the breakpoint itself and everything after it.
                 if (!isBreakpointSet || i >= window.debugBreakpoint) {
                     const columnasEjecutables = asegurarMeasure(datosxcolumnaacumulado);
 
@@ -1391,7 +1354,6 @@
                         }
                     }
                 } else {
-                    // Dummy value to keep ConjuntoResultados indexes aligned for columns skipped before breakpoint
                     ConjuntoResultados[i] = '{"0": 0}';
                 }
             }
@@ -1510,7 +1472,7 @@
 
                     rectWidth = maxWidth - (colsToSkip * pixelWidthPerCol);
                     rectX = baseX + (colsToSkip * pixelWidthPerCol);
-                    leftEdge = baseX + maxWidth; // Keep leftEdge conceptually at the far right of the circuit
+                    leftEdge = baseX + maxWidth;
 
                     debugRecorteActivo = false;
                 }
@@ -1560,7 +1522,6 @@
                 const colsToSkip = isBreakpointSet ? window.debugBreakpoint : 0;
                 const maxAllowedWidth = maxWidth - (colsToSkip * pixelWidthPerCol);
 
-                // Ensure we are strictly bounded if it got out of sync
                 rectWidth = Math.min(rectWidth, maxAllowedWidth);
                 rectWidth = Math.max(0, rectWidth - pixelWidthPerCol);
                 rectX = leftEdge - rectWidth;
@@ -1808,7 +1769,7 @@
 
                             const storedResult = checkData.stored_result;
                             ConjuntoResultados = storedResult;
-                            await leerURL(); // Sincroniza columnasURL para limites de navegación y overlay
+                            await leerURL();
                             pintarRectanguloConDatosAPI();
 
                             let feedback = document.getElementById("resultado-feedback");
@@ -1826,7 +1787,6 @@
                             }
                             return true;
                         } else {
-                            console.log("El ID existe pero la URL es diferente. Se permite la ejecución.");
                             return false;
                         }
                     }
@@ -1856,8 +1816,6 @@
             let resultsToSend = ConjuntoResultados;
             let urlToSend = getActualUrl(window.debugBreakpoint);
 
-            // Siempre enviamos el ConjuntoResultados COMPLETO para permitir navegación total tras carga
-            console.log("Enviando resultados completos para persistencia.");
             const sortedResults = ConjuntoResultados.map(rStr => {
                 try {
                     const obj = JSON.parse(rStr);
@@ -1871,7 +1829,6 @@
                     return rStr;
                 }
             });
-            console.log("Resultados (Filas ordenadas):", sortedResults);
 
             const payload = {
                 id_circuito_debug: window.currentCircuitId,
@@ -1895,11 +1852,8 @@
         }
 
 
-        // --- BREAKPOINTS MONKEY-PATCH START ---
         (function () {
-            // FORCE ENABLE for debug feature
             const isDebugMode = DEBUG;
-            //const isDebugMode = new URLSearchParams(window.location.search).get("debug") === "true";
             if (!isDebugMode) return;
 
             try {
@@ -1925,8 +1879,6 @@
                     console.warn("Breakpoints: Missing dependencies.");
                     return;
                 }
-
-                console.log("Breakpoints: Applying safe patch...");
 
                 window.debugBreakpoint = null;
 
@@ -1992,10 +1944,8 @@
 
                                 if (window.debugBreakpoint === i) {
                                     window.debugBreakpoint = null;
-                                    console.log("Breakpoint removed.");
                                 } else {
                                     window.debugBreakpoint = i;
-                                    console.log("Breakpoint set at column", i);
                                     breakpointColumn = i;
                                     hayBreakpoints = true;
                                 }
@@ -2028,8 +1978,6 @@
                     return originalTryClick.call(this, hand);
                 };
 
-                console.log("Breakpoints: Safe patch applied.");
-
             } catch (e) {
                 console.error("Breakpoints: Error applying patch:", e);
             }
@@ -2040,7 +1988,6 @@
                 const debugBtn = document.getElementById("start-button-debug");
                 if (debugBtn) {
                     debugBtn.addEventListener("click", async () => {
-                        console.log("Start Debug clicked (Calling ejecutarTodo)");
                         await ejecutarTodo();
                     });
                 } else {
@@ -2058,37 +2005,28 @@
 
         const inputResultadoEsperado = document.getElementById('inputResultadoEsperado');
 
-        // Función para comparar resultados con parseo flexible
         function compareResults() {
             if (!inputResultadoEsperado) return;
             const inputVal = inputResultadoEsperado.value.trim();
-
-            // Si está vacío, resetear estilo base
             if (!inputVal) {
                 inputResultadoEsperado.style.border = "none";
                 inputResultadoEsperado.style.backgroundColor = "#bfbfbf";
                 return;
             }
 
-            // Verificar si hay datos globales
             if (typeof dataGlobal === 'undefined' || !dataGlobal || !dataGlobal[`slice_${posicionActual}`]) {
                 return;
             }
             const currentResult = dataGlobal[`slice_${posicionActual}`];
-
-            // 1. Obtener los resultados reales ordenados por valor descendente
             const realSortedEntries = Object.entries(currentResult).sort((a, b) => b[1] - a[1]);
             const realSortedKeys = realSortedEntries.map(e => e[0]);
 
-            // Determinar longitud esperada de los bits (la de las claves del simulador)
             const expectedBitLength = realSortedKeys.length > 0 ? realSortedKeys[0].length : 0;
 
-            // 2. Parsear el input del usuario (separado por comas)
             const userInputs = inputVal.split(',').map(s => s.trim()).filter(s => s.length > 0);
 
             if (userInputs.length === 0) return;
 
-            // Verificar si el input parece un JSON (si empieza por { o [) para mantener compatibilidad si se desea
             const isJsonLike = inputVal.startsWith('{') || inputVal.startsWith('[');
 
             if (!isJsonLike) {
@@ -2096,7 +2034,6 @@
                 let processedInputs = 0;
 
                 userInputs.forEach((uVal, index) => {
-                    // Rellenar con ceros a la izquierda si tiene menos dígitos
                     const paddedUserVal = uVal.padStart(expectedBitLength, '0');
 
                     if (index < realSortedKeys.length) {
@@ -2107,20 +2044,16 @@
                     }
                 });
 
-                // Lógica de colores:
                 if (matchesCount === userInputs.length && userInputs.length > 0) {
-                    // Todos coinciden
                     inputResultadoEsperado.style.border = "4px solid #28a745";
                     inputResultadoEsperado.style.backgroundColor = "#d4edda";
                 } else {
-                    // Si no coinciden todos, rojo
                     inputResultadoEsperado.style.border = "4px solid #dc3545";
                     inputResultadoEsperado.style.backgroundColor = "#f8d7da";
                 }
                 return;
             }
 
-            // --- DE AQUÍ EN ADELANTE: LÓGICA JSON ORIGINAL (Fallback) ---
             let cleanInput = inputVal.replace(/'/g, '"');
             cleanInput = cleanInput.replace(/([{,]\s*)([a-zA-Z0-9_]+)(\s*:)/g, '$1"$2"$3');
 
@@ -2210,7 +2143,6 @@
 
             inputResultadoEsperado.addEventListener('blur', function () {
                 setStyleResult();
-                console.log("Input saved:", inputResultadoEsperado.value);
             });
 
             inputResultadoEsperado.addEventListener('focus', function () {
@@ -2218,7 +2150,6 @@
             });
         }
 
-        // Hook para llamar a comparar cuando cambia la gráfica
         const originalPintarGrafica = window.pintarGrafica;
         if (originalPintarGrafica) {
             window.pintarGrafica = function (sliceName, data) {
