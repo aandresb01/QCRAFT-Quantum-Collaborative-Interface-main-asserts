@@ -5,7 +5,7 @@
    </picture>
 </p>
 
-# QCRAFT Quantum Collaborative Interface  
+# QCRAFT Quantum Collaborative Interface
 ![Python Versions](https://img.shields.io/badge/python-3.9%20|%203.10%20|%203.11%20|%203.12-blue.svg)  
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](https://github.com/Qcraft-UEx/QCRAFT-Quantum-Collaborative-Interface/blob/main/LICENSE)
 
@@ -37,8 +37,7 @@
   Circuits can be deployed in Docker containers and exposed as web services for reproducible and accessible experimentation.
 
 - **Interactive Debug Mode**  
-  Visualize quantum circuit execution step-by-step. Inspect intermediate states, column-wise results, and final outcomes with dynamic visual tracking.
-
+  Visualize quantum circuit execution step-by-step. Inspect intermediate states, column-wise results, and final outcomes. Includes advanced features like **Breakpoints** to isolate circuit segments and **Assertions (Expected Results)** for automated logic verification with visual feedback.
 
 ## Workflow Overview
 
@@ -67,8 +66,11 @@ A demo video showing how to collaboratively design is available here:
 **Case 1: Viewing existing results**
 ![Debug Mode - Existing Results](./gifs/IDyaGuardado.gif)
 
-**Case 2:  Analyzing modified circuits**
+**Case 2: Analyzing modified circuits**
 ![Debug Mode - New Execution](./gifs/NuevoCircuito.gif)
+
+**Case 3: Using Breakpoints and Assertions**  
+🔗 [Ver Video: Modo Debug Breakpoints](./gifs/ModoDebug_BreakPoints.mp4)
 
 ## License
 

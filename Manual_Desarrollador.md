@@ -138,3 +138,16 @@ El modo Debug incluye una funcionalidad de **Breakpoints** que permite detener l
 
 [Ver Video: Modo Debug Breakpoints](./gifs/ModoDebug_BreakPoints.mp4)
 
+### Uso de Aserciones
+
+El modo Debug incluye una funcionalidad de **Aserciones** que permite verificar si los resultados obtenidos coinciden con los esperados por el desarrollador.
+
+*   **Campo de Entrada**: En la parte inferior de la pantalla de Debug, aparece un campo de texto con el mensaje *"Write the expected results (Format: 000, 100, 1001 ...)"*.
+*   **Formato Flexible**: Puedes introducir los resultados esperados como una lista de cadenas de bits separadas por comas (ej. `000, 100`). El sistema rellenará automáticamente con ceros a la izquierda si es necesario para coincidir con la longitud de registro del circuito.
+*   **Retroalimentación Visual**:
+    *   🟢 **Verde**: El input del usuario coincide exactamente con los resultados más probables de la gráfica actual.
+    *   🔴 **Rojo**: Hay una discrepancia entre el input y los resultados obtenidos.
+*   **Verificación Dinámica**: La validación se realiza automáticamente cada vez que se cambia de paso (columna) en el circuito, permitiendo una depuración guiada basada en expectativas.
+
+[Ver Video: Modo Debug Aserciones](./gifs/ModoDebug_Aserciones.mp4)
+

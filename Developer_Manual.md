@@ -153,3 +153,16 @@ Debug mode includes a **Breakpoints** functionality that allows stopping circuit
 
 [Watch Video: Debug Mode Breakpoints](./gifs/ModoDebug_BreakPoints.mp4)
 
+### Using Assertions
+
+Debug mode includes an **Assertions** functionality that allows verifying if the obtained results match the developer's expectations.
+
+*   **Input Field**: At the bottom of the Debug screen, a text field appears with the message *"Write the expected results (Format: 000, 100, 1001 ...)"*.
+*   **Flexible Format**: You can enter the expected results as a list of bitstrings separated by commas (e.g., `000, 100`). The system will automatically pad with leading zeros if necessary to match the circuit's register length.
+*   **Visual Feedback**:
+    *   🟢 **Green**: The user input exactly matches the most probable results in the current graph.
+    *   🔴 **Red**: There is a discrepancy between the input and the obtained results.
+*   **Dynamic Verification**: Validation is performed automatically every time you change steps (columns) in the circuit, allowing for guided debugging based on expectations.
+
+[Watch Video: Debug Mode Assertions](./gifs/ModoDebug_Assertions.mp4)
+
