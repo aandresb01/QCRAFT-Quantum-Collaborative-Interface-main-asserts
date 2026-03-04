@@ -326,7 +326,7 @@
         </div>
 
         <input type="text" id="inputResultadoEsperado"
-            placeholder="Write the expected results (Format: {0000: 2}, {0001: 5}, ...)"
+            placeholder="Write the expected results (Format: 000, 100, 1001 ...)"
             style="min-width: 300px; width: auto; background-color: #bfbfbf; border-radius: 12px; border: none; padding: 16px; color: black; gap: 6px; flex-wrap: nowrap; white-space: nowrap; overflow-x: auto; outline: none; box-shadow: none; font-family: Arial, sans-serif; font-size: 16px; font-weight: bold; transition: all 0.3s ease; box-sizing: border-box; align-self: center;">
     </div>
 
@@ -1165,7 +1165,6 @@
 
             undoDebug.addEventListener("click", () => {
                 const limit = (window.debugBreakpoint !== null && window.debugBreakpoint !== undefined && typeof window.debugBreakpoint === 'number') ? window.debugBreakpoint : 0;
-
                 if (posicionActual > limit) {
                     posicionActual--;
                     window.rectPasoAnterior();
@@ -1188,222 +1187,244 @@
         async function leerURL() {
 
             const url = window.location.href;
-            const [index, rawHash] = url.split(":[");
-
-            const hash = rawHash ? rawHash.slice(0, -2) : null;
+            const hash = window.location.hash;
 
             columnasURL = [];
-            if (hash) {
-                const columnasCrudas = hash.split("],[");
-                columnasCrudas[0] = columnasCrudas[0].slice(1);
-                columnasCrudas[columnasCrudas.length - 1] = columnasCrudas[columnasCrudas.length - 1].slice(0, -1);
 
-                columnasURL = columnasCrudas.map(c => {
-                    try {
-                        return decodeURIComponent(c);
-                    } catch (e) {
-                        return c;
-                    }
-                });
-            }
-
-            let feedback = document.getElementById("resultado-feedback");
-            if (!feedback) {
-                feedback = document.createElement("div");
-                feedback.id = "resultado-feedback";
-                feedback.style.position = "fixed";
-                feedback.style.top = "5px";
-                feedback.style.left = "10px";
-                feedback.style.padding = "10px 15px";
-                feedback.style.backgroundColor = "rgba(0,0,255,0.95)";
-                feedback.style.color = "white";
-                feedback.style.fontWeight = "bold";
-                feedback.style.borderRadius = "8px";
-                feedback.style.zIndex = 9999;
-                feedback.style.fontFamily = "Arial, sans-serif";
-                feedback.style.boxShadow = "0 2px 8px rgba(0,0,0,0.3)";
-                document.body.appendChild(feedback);
-            }
-
-            feedback.style.display = "none";
-
-            async function sacarID(datosxcolumnaacumulado) {
+            // 1. Intentar parseo estándar de Quirk (#circuit=...)
+            if (hash && hash.includes("circuit=")) {
                 try {
-
-                    const circuitoObj = { cols: datosxcolumnaacumulado };
-
-                    const circuitoJSON = JSON.stringify(circuitoObj);
-
-                    const circuitoCodificado = encodeURIComponent(circuitoJSON);
-
-                    const urlFinal = `https://algassert.com/quirk.html#circuit=${circuitoCodificado}`;
-
-                    const respuesta = await fetch("http://54.155.193.167:8082/url", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({
-                            url: urlFinal,
-                            shots: 1000,
-                            policy: "time",
-                            provider: "ibm"
-                        })
-                    });
-
-                    if (!respuesta.ok) {
-                        throw new Error(`Error HTTP: ${respuesta.status}`);
+                    let circuitPart = hash.substring(hash.indexOf("circuit=") + 8);
+                    const nextParamIndex = circuitPart.indexOf('&');
+                    if (nextParamIndex !== -1) {
+                        circuitPart = circuitPart.substring(0, nextParamIndex);
                     }
-
-                    const datos = await respuesta.text();
-                    return datos.trim();
-
-                } catch (error) {
-                    console.error("Error al obtener ID:", error);
-                    return null;
+                    const jsonStr = decodeURIComponent(circuitPart);
+                    const circuitData = JSON.parse(jsonStr);
+                    if (circuitData.cols) {
+                        columnasURL = circuitData.cols.map(col => col.join(","));
+                    }
+                } catch (e) {
+                    console.error("Error al parsear formato standard de Quirk:", e);
                 }
             }
 
-            async function sacarResultado(IdCircuito, intentoInicial = 1, columnaIndex = 0) {
+            // 2. Si falla o no existe, intentar parseo custom (Legacy/Custom format :[...] )
+            if (columnasURL.length === 0) {
+                const parts = url.split(":[");
+                if (parts.length > 1) {
+                    const rawHash = parts[1];
+                    const legacyHash = rawHash ? rawHash.slice(0, -2) : null;
 
-                const ESPERA_MS = 1000;
-                let intento = intentoInicial;
-                const MAX_INTENTOS = 10;
+                    if (legacyHash) {
+                        const columnasCrudas = legacyHash.split("],[");
+                        columnasCrudas[0] = columnasCrudas[0].slice(1);
+                        columnasCrudas[columnasCrudas.length - 1] = columnasCrudas[columnasCrudas.length - 1].slice(0, -1);
 
-                while (intento <= MAX_INTENTOS) {
-
-                    feedback.style.display = "block";
-                    feedback.textContent = `📝 Consultando Resultado: Columna ${columnaIndex + 1}`;
-                    await new Promise(res => setTimeout(res, 3000));
-
-                    try {
-                        const getResponse = await fetch(`http://54.155.193.167:8082/result?id=${IdCircuito}`);
-                        if (!getResponse.ok) {
-                            feedback.textContent = `⚠️ Error en GET (${getResponse.status})`;
-                            console.log(`Intento ${intento}: error en GET (${getResponse.status})`);
-                        } else {
-                            const resultData = await getResponse.json();
-
-                            const listo = Array.isArray(resultData) ? resultData.length > 4 : Object.keys(resultData).length > 4;
-
-                            if (listo) {
-                                feedback.textContent = `✅ Resultado Listo: Columna ${columnaIndex + 1}`;
-
-                                await new Promise(res => setTimeout(res, 1500));
-
-                                return resultData;
+                        columnasURL = columnasCrudas.map(c => {
+                            try {
+                                return decodeURIComponent(c);
+                            } catch (e) {
+                                return c;
                             }
-                        }
-                    } catch (error) {
-                        console.error("Error en GET:", error);
+                        });
                     }
+                }
+            }
+        }
 
-                    intento++;
-                    await new Promise(res => setTimeout(res, ESPERA_MS));
+        let feedback = document.getElementById("resultado-feedback");
+        if (!feedback) {
+            feedback = document.createElement("div");
+            feedback.id = "resultado-feedback";
+            feedback.style.position = "fixed";
+            feedback.style.top = "5px";
+            feedback.style.left = "10px";
+            feedback.style.padding = "10px 15px";
+            feedback.style.backgroundColor = "rgba(0,0,255,0.95)";
+            feedback.style.color = "white";
+            feedback.style.fontWeight = "bold";
+            feedback.style.borderRadius = "8px";
+            feedback.style.zIndex = 9999;
+            feedback.style.fontFamily = "Arial, sans-serif";
+            feedback.style.boxShadow = "0 2px 8px rgba(0,0,0,0.3)";
+            document.body.appendChild(feedback);
+        }
+
+        feedback.style.display = "none";
+
+        async function sacarID(datosxcolumnaacumulado) {
+            try {
+
+                const circuitoObj = { cols: datosxcolumnaacumulado };
+
+                const circuitoJSON = JSON.stringify(circuitoObj);
+
+                const circuitoCodificado = encodeURIComponent(circuitoJSON);
+
+                const urlFinal = `https://algassert.com/quirk.html#circuit=${circuitoCodificado}`;
+
+                const respuesta = await fetch("http://54.155.193.167:8082/url", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        url: urlFinal,
+                        shots: 1000,
+                        policy: "time",
+                        provider: "ibm"
+                    })
+                });
+
+                if (!respuesta.ok) {
+                    throw new Error(`Error HTTP: ${respuesta.status}`);
                 }
 
-                console.warn(`⚠️ Se superó el máximo de ${MAX_INTENTOS} intentos para IdCircuito=${IdCircuito}`);
+                const datos = await respuesta.text();
+                return datos.trim();
+
+            } catch (error) {
+                console.error("Error al obtener ID:", error);
                 return null;
             }
+        }
 
-            window.ejecutarTodo = async function () {
+        async function sacarResultado(IdCircuito, intentoInicial = 1, columnaIndex = 0) {
+
+            const ESPERA_MS = 1000;
+            let intento = intentoInicial;
+            const MAX_INTENTOS = 10;
+
+            while (intento <= MAX_INTENTOS) {
+
                 feedback.style.display = "block";
-                feedback.textContent = "📝 Iniciando depuración...";
+                feedback.textContent = `📝 Consultando Resultado: Columna ${columnaIndex + 1}`;
+                await new Promise(res => setTimeout(res, 3000));
 
-                let datosxcolumnaacumulado = [];
-                ConjuntoResultados = [];
-                debugAlreadySent = false;
-                let stopAtBreakpoint = false;
-
-                window.currentCircuitId = getCircuitIdFromUrl();
-                if (window.currentCircuitId) {
-                    const exists = await comprobarCircuitoBD(window.currentCircuitId);
-                    if (exists) return;
-                }
-
-                const isBreakpointSet = window.debugBreakpoint !== null && window.debugBreakpoint !== undefined && typeof window.debugBreakpoint === 'number';
-
-                window.resultadosDespuesDelBreakpoint = [];
-
-                for (let i = 0; i < columnasURL.length; i++) {
-
-                    const columnaArray = columnasURL[i]
-                        .split(",")
-                        .map(v => {
-                            v = v.trim();
-                            if (v === "1") return 1;
-                            return v.replace(/^"+|"+$/g, "");
-                        });
-
-                    datosxcolumnaacumulado.push(columnaArray);
-                    columnasCircuito = datosxcolumnaacumulado.map(c => [...c]);
-
-                    // Skip intermediate columns before the breakpoint, but process the breakpoint itself and everything after it.
-                    if (!isBreakpointSet || i >= window.debugBreakpoint) {
-                        const columnasEjecutables = asegurarMeasure(datosxcolumnaacumulado);
-
-                        const IdCircuito = await sacarID(columnasEjecutables);
-                        if (IdCircuito) {
-
-                            const resultado = await sacarResultado(IdCircuito, 1, i);
-
-                            const resultadoStr = typeof resultado === "string" ? resultado : JSON.stringify(resultado);
-
-                            const parteValue = resultadoStr.split('"value":')[1];
-
-                            if (parteValue) {
-
-                                const soloValue = parteValue.substring(
-                                    0,
-                                    parteValue.lastIndexOf("}")
-                                );
-
-                                ConjuntoResultados[i] = soloValue;
-
-                                if (isBreakpointSet && i > window.debugBreakpoint) {
-                                    window.resultadosDespuesDelBreakpoint.push(JSON.parse(soloValue.trim()));
-                                }
-
-                            }
-                        }
+                try {
+                    const getResponse = await fetch(`http://54.155.193.167:8082/result?id=${IdCircuito}`);
+                    if (!getResponse.ok) {
+                        feedback.textContent = `⚠️ Error en GET (${getResponse.status})`;
+                        console.log(`Intento ${intento}: error en GET (${getResponse.status})`);
                     } else {
-                        // Dummy value to keep ConjuntoResultados indexes aligned for columns skipped before breakpoint
-                        ConjuntoResultados[i] = '{"0": 0}';
+                        const resultData = await getResponse.json();
+
+                        const listo = Array.isArray(resultData) ? resultData.length > 4 : Object.keys(resultData).length > 4;
+
+                        if (listo) {
+                            feedback.textContent = `✅ Resultado Listo: Columna ${columnaIndex + 1}`;
+
+                            await new Promise(res => setTimeout(res, 1500));
+
+                            return resultData;
+                        }
                     }
+                } catch (error) {
+                    console.error("Error en GET:", error);
                 }
 
-                if (stopAtBreakpoint) {
-                    feedback.textContent = `✅ Resultados obtenidos hasta el breakpoint de la columna ${window.debugBreakpoint + 1}`;
-                } else {
-                    feedback.textContent = `✅ Todos los resultados se han obtenido correctamente`;
-                }
-                await new Promise(res => setTimeout(res, 2000));
-                feedback.style.display = "none";
-
-                pintarRectanguloConDatosAPI();
-                sendDebugData();
-
-            };
-
-            function asegurarMeasure(cols) {
-
-                const columnas = JSON.parse(JSON.stringify(cols));
-
-                const maxQubits = Math.max(...columnas.map(c => c.length));
-
-                const ultima = columnas[columnas.length - 1];
-
-                const tieneMeasure = ultima.some(v => v === "Measure");
-
-                if (!tieneMeasure) {
-                    const columnaMeasure = Array.from(
-                        { length: maxQubits },
-                        () => "Measure"
-                    );
-
-                    columnas.push(columnaMeasure);
-                }
-
-                return columnas;
+                intento++;
+                await new Promise(res => setTimeout(res, ESPERA_MS));
             }
+
+            console.warn(`⚠️ Se superó el máximo de ${MAX_INTENTOS} intentos para IdCircuito=${IdCircuito}`);
+            return null;
+        }
+
+        window.ejecutarTodo = async function () {
+            feedback.style.display = "block";
+            feedback.textContent = "📝 Iniciando depuración...";
+
+            let datosxcolumnaacumulado = [];
+            ConjuntoResultados = [];
+            debugAlreadySent = false;
+            let stopAtBreakpoint = false;
+
+            window.currentCircuitId = getCircuitIdFromUrl();
+            if (window.currentCircuitId) {
+                const exists = await comprobarCircuitoBD(window.currentCircuitId);
+                if (exists) return;
+            }
+
+            const isBreakpointSet = window.debugBreakpoint !== null && window.debugBreakpoint !== undefined && typeof window.debugBreakpoint === 'number';
+
+            window.resultadosDespuesDelBreakpoint = [];
+
+            for (let i = 0; i < columnasURL.length; i++) {
+
+                const columnaArray = columnasURL[i]
+                    .split(",")
+                    .map(v => {
+                        v = v.trim();
+                        if (v === "1") return 1;
+                        return v.replace(/^"+|"+$/g, "");
+                    });
+
+                datosxcolumnaacumulado.push(columnaArray);
+                columnasCircuito = datosxcolumnaacumulado.map(c => [...c]);
+
+                // Skip intermediate columns before the breakpoint, but process the breakpoint itself and everything after it.
+                if (!isBreakpointSet || i >= window.debugBreakpoint) {
+                    const columnasEjecutables = asegurarMeasure(datosxcolumnaacumulado);
+
+                    const IdCircuito = await sacarID(columnasEjecutables);
+                    if (IdCircuito) {
+
+                        const resultado = await sacarResultado(IdCircuito, 1, i);
+
+                        const resultadoStr = typeof resultado === "string" ? resultado : JSON.stringify(resultado);
+
+                        const parteValue = resultadoStr.split('"value":')[1];
+
+                        if (parteValue) {
+
+                            const soloValue = parteValue.substring(
+                                0,
+                                parteValue.lastIndexOf("}")
+                            );
+
+                            ConjuntoResultados[i] = soloValue;
+
+                            if (isBreakpointSet && i > window.debugBreakpoint) {
+                                window.resultadosDespuesDelBreakpoint.push(JSON.parse(soloValue.trim()));
+                            }
+
+                        }
+                    }
+                } else {
+                    // Dummy value to keep ConjuntoResultados indexes aligned for columns skipped before breakpoint
+                    ConjuntoResultados[i] = '{"0": 0}';
+                }
+            }
+
+            feedback.textContent = `✅ Todos los resultados se han obtenido correctamente`;
+            await new Promise(res => setTimeout(res, 2000));
+            feedback.style.display = "none";
+
+            pintarRectanguloConDatosAPI();
+            sendDebugData();
+
+        };
+
+        function asegurarMeasure(cols) {
+
+            const columnas = JSON.parse(JSON.stringify(cols));
+
+            const maxQubits = Math.max(...columnas.map(c => c.length));
+
+            const ultima = columnas[columnas.length - 1];
+
+            const tieneMeasure = ultima.some(v => v === "Measure");
+
+            if (!tieneMeasure) {
+                const columnaMeasure = Array.from(
+                    { length: maxQubits },
+                    () => "Measure"
+                );
+
+                columnas.push(columnaMeasure);
+            }
+
+            return columnas;
         }
 
         function mostrarColumnas() {
@@ -1744,6 +1765,35 @@
 
         window.currentCircuitId = getCircuitIdFromUrl();
 
+        function getActualUrl(bp) {
+            let url = window.location.href;
+            if (bp === null || bp === undefined || typeof bp !== 'number') return url;
+            try {
+                const hash = window.location.hash;
+                if (hash && hash.includes('circuit=')) {
+                    let baseUrl = url.split('#')[0];
+                    let circuitPart = hash.substring(hash.indexOf('circuit=') + 8);
+                    let extraPart = "";
+                    const nextParamIndex = circuitPart.indexOf('&');
+                    if (nextParamIndex !== -1) {
+                        extraPart = circuitPart.substring(nextParamIndex);
+                        circuitPart = circuitPart.substring(0, nextParamIndex);
+                    }
+
+                    const jsonStr = decodeURIComponent(circuitPart);
+                    const circuitData = JSON.parse(jsonStr);
+                    if (circuitData.cols) {
+                        circuitData.cols = circuitData.cols.slice(0, bp + 1);
+                        const newJsonStr = JSON.stringify(circuitData);
+                        return `${baseUrl}#circuit=${encodeURIComponent(newJsonStr)}${extraPart}`;
+                    }
+                }
+            } catch (e) {
+                console.error("Error generating actual URL:", e);
+            }
+            return url;
+        }
+
         async function comprobarCircuitoBD(id) {
             try {
                 const checkResponse = await fetch(`http://127.0.0.1:8000/check_circuit_exists/?id_circuito_debug=${id}`);
@@ -1751,13 +1801,14 @@
                     const checkData = await checkResponse.json();
                     if (checkData.exists) {
 
-                        const currentUrl = window.location.href;
+                        const currentUrl = getActualUrl(window.debugBreakpoint);
                         const storedUrl = checkData.stored_url;
 
                         if (currentUrl == storedUrl) {
 
                             const storedResult = checkData.stored_result;
                             ConjuntoResultados = storedResult;
+                            await leerURL(); // Sincroniza columnasURL para limites de navegación y overlay
                             pintarRectanguloConDatosAPI();
 
                             let feedback = document.getElementById("resultado-feedback");
@@ -1803,24 +1854,11 @@
             }
 
             let resultsToSend = ConjuntoResultados;
-            let urlToSend = window.location.href;
+            let urlToSend = getActualUrl(window.debugBreakpoint);
 
-            let fullUrl = window.location.href;
-            try {
-                const hash = window.location.hash;
-                if (hash && hash.includes('circuit=')) {
-                    const jsonStr = decodeURIComponent(hash.substring(hash.indexOf('circuit=') + 8));
-                    const circuitData = JSON.parse(jsonStr);
-                    const newJsonStr = JSON.stringify(circuitData);
-                    const baseUrl = window.location.href.split('#')[0];
-                    fullUrl = `${baseUrl}#circuit=${encodeURIComponent(newJsonStr)}`;
-                }
-            } catch (e) {
-                console.error("Error generating full URL:", e);
-            }
-
-            console.log("URL de todo el circuito:", fullUrl);
-            const sortedConjunto = ConjuntoResultados.map(rStr => {
+            // Siempre enviamos el ConjuntoResultados COMPLETO para permitir navegación total tras carga
+            console.log("Enviando resultados completos para persistencia.");
+            const sortedResults = ConjuntoResultados.map(rStr => {
                 try {
                     const obj = JSON.parse(rStr);
                     return Object.entries(obj)
@@ -1833,50 +1871,7 @@
                     return rStr;
                 }
             });
-            console.log("Resultado total del circuito (Filas ordenadas de mayor a menor):", sortedConjunto);
-
-            if (window.debugBreakpoint !== null && window.debugBreakpoint !== undefined && typeof window.debugBreakpoint === 'number') {
-                // Si hay un breakpoint, enviamos solo hasta esa columna (inclusive)
-                if (Array.isArray(ConjuntoResultados)) {
-                    resultsToSend = ConjuntoResultados.slice(0, window.debugBreakpoint + 1);
-                }
-
-                // --- TRUNCATE CIRCUIT STRUCTURE (URL) ---
-                try {
-                    const hash = window.location.hash;
-                    if (hash && hash.includes('circuit=')) {
-                        const jsonStr = decodeURIComponent(hash.substring(hash.indexOf('circuit=') + 8));
-                        const circuitData = JSON.parse(jsonStr);
-
-                        if (circuitData.cols) {
-                            circuitData.cols = circuitData.cols.slice(0, window.debugBreakpoint + 1);
-                            const newJsonStr = JSON.stringify(circuitData);
-                            const baseUrl = window.location.href.split('#')[0];
-                            urlToSend = `${baseUrl}#circuit=${encodeURIComponent(newJsonStr)}`;
-                        }
-                    }
-                } catch (e) {
-                    console.error("Error generating truncated URL:", e);
-                }
-
-                console.log("URL hasta el breakpoint:", urlToSend);
-                const sortedBreakpointResults = resultsToSend.map(rStr => {
-                    try {
-                        const obj = JSON.parse(rStr);
-                        return Object.entries(obj)
-                            .sort((a, b) => b[1] - a[1])
-                            .reduce((acc, [k, v]) => {
-                                acc['\u200b' + k] = v;
-                                return acc;
-                            }, {});
-                    } catch (e) {
-                        return rStr;
-                    }
-                });
-                console.log("Resultado hasta el breakpoint (Filas ordenadas de mayor a menor):", sortedBreakpointResults);
-                debugAlreadySent = true;
-                return; // SKIP SENDING TO DB IF BREAKPOINT IS SET
-            }
+            console.log("Resultados (Filas ordenadas):", sortedResults);
 
             const payload = {
                 id_circuito_debug: window.currentCircuitId,
