@@ -1298,6 +1298,7 @@
         }
 
         // Consulta iterativamente hasta obtener el resultado de la simulación para una columna
+        // Consulta iterativamente hasta obtener el resultado de la simulación para una columna
         async function sacarResultado(IdCircuito, intentoInicial = 1, columnaIndex = 0) {
 
             const ESPERA_MS = 1000;
@@ -1307,7 +1308,7 @@
             while (intento <= MAX_INTENTOS) {
 
                 feedback.style.display = "block";
-                feedback.textContent = `📝 Consultando Resultado: Columna ${columnaIndex + 1}`;
+                feedback.textContent = `⏳ Cargando...`;
                 await new Promise(res => setTimeout(res, 3000));
 
                 try {
@@ -1321,8 +1322,6 @@
                         const listo = Array.isArray(resultData) ? resultData.length > 4 : Object.keys(resultData).length > 4;
 
                         if (listo) {
-                            feedback.textContent = `✅ Resultado Listo: Columna ${columnaIndex + 1}`;
-
                             await new Promise(res => setTimeout(res, 1500));
 
                             return resultData;
@@ -1336,7 +1335,6 @@
                 await new Promise(res => setTimeout(res, ESPERA_MS));
             }
 
-            console.warn(`⚠️ Se superó el máximo de ${MAX_INTENTOS} intentos para IdCircuito=${IdCircuito}`);
             return null;
         }
 
@@ -1345,67 +1343,97 @@
             feedback.style.display = "block";
             feedback.textContent = "📝 Iniciando depuración...";
 
-            let datosxcolumnaacumulado = [];
-            ConjuntoResultados = [];
-            debugAlreadySent = false;
-            let stopAtBreakpoint = false;
+            let success = false;
+            let idsArray = [];
+            let rawResultsArray = [];
 
-            window.currentCircuitId = getCircuitIdFromUrl();
-            if (window.currentCircuitId) {
-                const exists = await comprobarCircuitoBD(window.currentCircuitId);
-                if (exists) return;
-            }
+            while (!success) {
+                idsArray = [];
+                rawResultsArray = [];
+                ConjuntoResultados = [];
+                debugAlreadySent = false;
+                window.resultadosDespuesDelBreakpoint = [];
 
-            const isBreakpointSet = window.debugBreakpoint !== null && window.debugBreakpoint !== undefined && typeof window.debugBreakpoint === 'number';
+                window.currentCircuitId = getCircuitIdFromUrl();
+                if (window.currentCircuitId) {
+                    const exists = await comprobarCircuitoBD(window.currentCircuitId);
+                    if (exists) return;
+                }
 
-            window.resultadosDespuesDelBreakpoint = [];
+                const isBreakpointSet = window.debugBreakpoint !== null && window.debugBreakpoint !== undefined && typeof window.debugBreakpoint === 'number';
 
-            for (let i = 0; i < columnasURL.length; i++) {
+                // 1. Preparar las columnas ejecutables
+                let datosxcolumnaacumulado = [];
+                const batches = [];
 
-                const columnaArray = columnasURL[i]
-                    .split(",")
-                    .map(v => {
-                        v = v.trim();
-                        if (v === "1") return 1;
-                        return v.replace(/^"+|"+$/g, "");
-                    });
+                for (let i = 0; i < columnasURL.length; i++) {
+                    const columnaArray = columnasURL[i]
+                        .split(",")
+                        .map(v => {
+                            v = v.trim();
+                            if (v === "1") return 1;
+                            return v.replace(/^"+|"+$/g, "");
+                        });
 
-                datosxcolumnaacumulado.push(columnaArray);
-                columnasCircuito = datosxcolumnaacumulado.map(c => [...c]);
+                    datosxcolumnaacumulado.push(columnaArray);
 
-                // Skip intermediate columns before the breakpoint, but process the breakpoint itself and everything after it.
-                if (!isBreakpointSet || i >= window.debugBreakpoint) {
-                    const columnasEjecutables = asegurarMeasure(datosxcolumnaacumulado);
-
-                    const IdCircuito = await sacarID(columnasEjecutables);
-                    if (IdCircuito) {
-
-                        const resultado = await sacarResultado(IdCircuito, 1, i);
-
-                        const resultadoStr = typeof resultado === "string" ? resultado : JSON.stringify(resultado);
-
-                        const parteValue = resultadoStr.split('"value":')[1];
-
-                        if (parteValue) {
-
-                            const soloValue = parteValue.substring(
-                                0,
-                                parteValue.lastIndexOf("}")
-                            );
-
-                            ConjuntoResultados[i] = soloValue;
-
-                            if (isBreakpointSet && i > window.debugBreakpoint) {
-                                window.resultadosDespuesDelBreakpoint.push(JSON.parse(soloValue.trim()));
-                            }
-
-                        }
+                    if (!isBreakpointSet || i >= window.debugBreakpoint) {
+                        const columnasEjecutables = asegurarMeasure([...datosxcolumnaacumulado]);
+                        batches.push({ index: i, data: columnasEjecutables });
+                    } else {
+                        ConjuntoResultados[i] = '{"0": 0}';
                     }
+                }
+
+                // 2. FASE 1: Obtener todos los IDs y guardarlos en un array
+                const idPromises = batches.map(batch => sacarID(batch.data));
+                idsArray = await Promise.all(idPromises);
+
+                if (idsArray.includes(null)) {
+                    console.warn("⚠️ Error obteniendo IDs. Reintentando...");
+                    continue;
+                }
+
+                // 3. FASE 2: Usar el array de IDs para obtener los resultados en otro array
+                const resultPromises = idsArray.map((id, idx) => sacarResultado(id, 1, batches[idx].index));
+                rawResultsArray = await Promise.all(resultPromises);
+
+                // 4. Comprobar resultados y reintentar si falta "value"
+                let allValid = true;
+                for (let i = 0; i < rawResultsArray.length; i++) {
+                    const resultado = rawResultsArray[i];
+                    if (!resultado) {
+                        allValid = false;
+                        break;
+                    }
+
+                    const resultadoStr = typeof resultado === "string" ? resultado : JSON.stringify(resultado);
+                    if (!resultadoStr.includes('"value":')) {
+                        console.warn(`❌ Resultado en índice ${i} no tiene 'value'.`);
+                        allValid = false;
+                        break;
+                    }
+
+                    // Extraer y guardar el valor
+                    const idxOriginal = batches[i].index;
+                    const parteValue = resultadoStr.split('"value":')[1];
+                    const soloValue = parteValue.substring(0, parteValue.lastIndexOf("}"));
+                    
+                    ConjuntoResultados[idxOriginal] = soloValue;
+                    
+                    if (isBreakpointSet && idxOriginal > window.debugBreakpoint) {
+                        window.resultadosDespuesDelBreakpoint.push(JSON.parse(soloValue.trim()));
+                    }
+                }
+
+                if (allValid) {
+                    success = true;
                 } else {
-                    // Dummy value to keep ConjuntoResultados indexes aligned for columns skipped before breakpoint
-                    ConjuntoResultados[i] = '{"0": 0}';
+                    await new Promise(res => setTimeout(res, 2000));
                 }
             }
+
+            // Mostrar por consola los arrays finales como pidió el usuario
 
             feedback.textContent = `✅ Todos los resultados se han obtenido correctamente`;
             await new Promise(res => setTimeout(res, 2000));
@@ -1413,7 +1441,6 @@
 
             pintarRectanguloConDatosAPI();
             sendDebugData();
-
         };
 
         // --- FUNCIONES DE UTILIDAD QCraft ---
@@ -1852,7 +1879,6 @@
                             }
                             return true;
                         } else {
-                            console.log("El ID existe pero la URL es diferente. Se permite la ejecución.");
                             return false;
                         }
                     }
@@ -1884,7 +1910,6 @@
             let urlToSend = getActualUrl(window.debugBreakpoint);
 
             // Siempre enviamos el ConjuntoResultados COMPLETO para permitir navegación total tras carga
-            console.log("Enviando resultados completos para persistencia.");
             const sortedResults = ConjuntoResultados.map(rStr => {
                 try {
                     const obj = JSON.parse(rStr);
@@ -1898,7 +1923,6 @@
                     return rStr;
                 }
             });
-            console.log("Resultados (Filas ordenadas):", sortedResults);
 
             const payload = {
                 id_circuito_debug: window.currentCircuitId,
@@ -1953,8 +1977,6 @@
                     console.warn("Breakpoints: Missing dependencies.");
                     return;
                 }
-
-                console.log("Breakpoints: Applying safe patch...");
 
                 window.debugBreakpoint = null;
 
@@ -2023,7 +2045,6 @@
                                     console.log("Breakpoint removed.");
                                 } else {
                                     window.debugBreakpoint = i;
-                                    console.log("Breakpoint set at column", i);
                                     breakpointColumn = i;
                                     hayBreakpoints = true;
                                 }
@@ -2056,8 +2077,6 @@
                     return originalTryClick.call(this, hand);
                 };
 
-                console.log("Breakpoints: Safe patch applied.");
-
             } catch (e) {
                 console.error("Breakpoints: Error applying patch:", e);
             }
@@ -2069,7 +2088,6 @@
                 const debugBtn = document.getElementById("start-button-debug");
                 if (debugBtn) {
                     debugBtn.addEventListener("click", async () => {
-                        console.log("Start Debug clicked (Calling ejecutarTodo)");
                         await ejecutarTodo();
                     });
                 } else {
